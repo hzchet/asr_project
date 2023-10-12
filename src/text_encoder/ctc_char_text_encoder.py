@@ -1,4 +1,5 @@
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Dict, Tuple
+from collections import defaultdict
 
 import torch
 
@@ -34,7 +35,7 @@ class CTCCharTextEncoder(CharTextEncoder):
         return ''.join(result)
 
     def ctc_beam_search(self, probs: torch.tensor, probs_length,
-                        beam_size: int = 100) -> List[Hypothesis]:
+                        beam_size: int = 4) -> List[Hypothesis]:
         """
         Performs beam search and returns a list of pairs (hypothesis, hypothesis probability).
         """
@@ -42,6 +43,40 @@ class CTCCharTextEncoder(CharTextEncoder):
         char_length, voc_size = probs.shape
         assert voc_size == len(self.ind2char)
         hypos: List[Hypothesis] = []
-        # TODO: your code here
-        raise NotImplementedError
+        
+        state = {('', self.EMPTY_TOK): 1.0}
+        for i in range(char_length):
+            frame = probs[i, :]
+            frame = frame[:probs_length[i]]
+            state = self._extend_and_merge(frame, state)
+            state = self._truncate(state, beam_size)
+        
+        hypos = [Hypothesis(text, prob) for (text, char), prob in state.items()]
         return sorted(hypos, key=lambda x: x.prob, reverse=True)
+
+    def _extend_and_merge(self, frame: torch.tensor, 
+                          state: Dict[Tuple[str, str], float]) -> Dict[Tuple[str, str], float]:
+        """
+        Extends state dictionary
+        """
+        new_state = defaultdict(float)
+        for next_char_index, next_char_proba in enumerate(frame):
+            for (pref, last_char), pref_proba in state.items():
+                next_char = self.ind2char[next_char_index]
+                if next_char == last_char or next_char == self.EMPTY_TOK:
+                    new_prefix = pref
+                else:
+                    new_prefix = pref + next_char
+                
+                last_char = next_char
+                new_state[(new_prefix, last_char)] += pref_proba * next_char_proba
+                
+        return new_state
+
+    def _truncate(self, state: Dict[Tuple[str, str], float], beam_size: int):
+        """
+        Truncates a state dictionary to the top most probable 'beam_size' entries
+        """
+        state_list =  list(state.items())
+        state_list.sort(key=lambda x: -x[1])
+        return dict(state_list[:beam_size])
