@@ -18,7 +18,7 @@ def collate_fn(dataset_items: List[dict]):
     Collate and pad fields in dataset items
     """
     spectrograms = [item['spectrogram'].squeeze(0) for item in dataset_items]
-    spectrogram_lens = [item['spectrogram_len'] for item in dataset_items]
+    spectrogram_lens = torch.tensor([item['spectrogram_len'] for item in dataset_items])
     durations = [item['duration'] for item in dataset_items]
     texts = [item['text'] for item in dataset_items]
     encoded_texts = [item['text_encoded'] for item in dataset_items]
