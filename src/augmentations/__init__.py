@@ -1,5 +1,4 @@
-from collections import Callable
-from typing import List
+from typing import List, Callable
 
 import src.augmentations.spectrogram_augmentations
 import src.augmentations.wave_augmentations
