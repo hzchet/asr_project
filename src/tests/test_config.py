@@ -2,7 +2,7 @@ import json
 import unittest
 
 from src.tests.utils import clear_log_folder_after_use
-from srcr.utils.parse_config import ConfigParser
+from src.utils.parse_config import ConfigParser
 
 
 class TestConfig(unittest.TestCase):

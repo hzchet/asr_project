@@ -16,14 +16,4 @@ class TestTextEncoder(unittest.TestCase):
         self.assertIn(decoded_text, true_text)
 
     def test_beam_search(self):
-        # TODO
-        # text_encoder = CTCCharTextEncoder()
-        
-        # vocab_size = len(text_encoder.ind2char)
-        # seq_len = 10
-        
-        # probs = torch.rand(seq_len, vocab_size)
-        # row_sums = probs.sum(dim=1, keepdim=True)
-        # probs /= row_sums
-        # log_probs = torch.log(log_probs)
-        
+        pass
