@@ -26,11 +26,12 @@ class CTCCharTextEncoder(CharTextEncoder):
         last_ind = self.char2ind[self.EMPTY_TOK]
         for ind in inds:
             if ind == self.char2ind[self.EMPTY_TOK]:
+                last_ind = ind
                 continue
             if ind != last_ind:
-                result.append(self.ind2char[last_ind])
+                result.append(self.ind2char[ind])
             
-            last_ind = ind        
+            last_ind = ind
         
         return ''.join(result)
 

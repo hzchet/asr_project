@@ -17,7 +17,7 @@ def get_dataloaders(configs: ConfigParser, text_encoder: BaseTextEncoder):
 
         # set train augmentations
         if split == 'train':
-            wave_augs, spec_augs = hw_asr.augmentations.from_configs(configs)
+            wave_augs, spec_augs = src.augmentations.from_configs(configs)
             drop_last = True
         else:
             wave_augs, spec_augs = None, None
@@ -27,7 +27,7 @@ def get_dataloaders(configs: ConfigParser, text_encoder: BaseTextEncoder):
         datasets = []
         for ds in params["datasets"]:
             datasets.append(configs.init_obj(
-                ds, hw_asr.datasets, text_encoder=text_encoder, config_parser=configs,
+                ds, src.datasets, text_encoder=text_encoder, config_parser=configs,
                 wave_augs=wave_augs, spec_augs=spec_augs))
         assert len(datasets)
         if len(datasets) > 1:

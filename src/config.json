@@ -33,7 +33,7 @@
             "max_audio_length": 20.0,
             "max_text_length": 200
           },
-          "module": "hw_asr.models"
+          "module": "src.models"
         },
         {
           "type": "LibrispeechDataset",

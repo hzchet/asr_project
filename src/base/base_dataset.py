@@ -46,8 +46,8 @@ class BaseDataset(Dataset):
         audio_wave, audio_spec = self.process_wave(audio_wave)
         return {
             "audio": audio_wave,
-            "spectogram": audio_spec,
-            "spectogram_len": audio_spec.shape[1],
+            "spectrogram": audio_spec,
+            "spectrogram_len": audio_spec.shape[-1],
             "duration": audio_wave.size(1) / self.config_parser["preprocessing"]["sr"],
             "text": data_dict["text"],
             "text_encoded": self.text_encoder.encode(data_dict["text"]),
