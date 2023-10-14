@@ -173,8 +173,12 @@ data/
 input/
 saved/
 wandb/
+notebooks/
 
 # editor, os cache directory
 .vscode/
 .idea/
 __MACOSX/
+
+Makefile
+Dockerfile
