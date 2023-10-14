@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class CommonVoiceDataset(BaseDataset):
     def __init__(self, split, *args, **kwargs):
-        self._data_dir = ROOT_PATH / "dataset_common_voice"
+        self._data_dir = ROOT_PATH / "data" / "datasets" / "common_voice"
         self._regex = re.compile("[^a-z ]")
         self._dataset = load_dataset("common_voice", "en", cache_dir=self._data_dir, split=split)
         index = self._get_or_load_index(split)
