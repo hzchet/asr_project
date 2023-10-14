@@ -2,6 +2,7 @@ from typing import List, NamedTuple, Dict, Tuple
 from collections import defaultdict
 
 import torch
+from pyctcdecode import build_ctcdecoder
 
 from .char_text_encoder import CharTextEncoder
 
@@ -14,9 +15,17 @@ class Hypothesis(NamedTuple):
 class CTCCharTextEncoder(CharTextEncoder):
     EMPTY_TOK = "^"
 
-    def __init__(self, alphabet: List[str] = None):
+    def __init__(self, alphabet: List[str] = None, lm_model_path: str = None):
         super().__init__(alphabet)
         vocab = [self.EMPTY_TOK] + list(self.alphabet)
+        self.lm_ctcdecoder = None
+        
+        if lm_model_path is not None:
+            self.lm_ctcdecoder = build_ctcdecoder(
+                labels=[''] + list(self.alphabet),
+                kenlm_model_path=lm_model_path
+            )
+            
         self.ind2char = dict(enumerate(vocab))
         self.char2ind = {v: k for k, v in self.ind2char.items()}
 
@@ -34,7 +43,18 @@ class CTCCharTextEncoder(CharTextEncoder):
             last_ind = ind
         
         return ''.join(result)
-
+    
+    def ctc_beam_search_decode(self, probs: torch.tensor, probs_length,
+                               beam_size: int = 4) -> str:
+        assert len(probs.shape) == 2
+        char_length, voc_size = probs.shape
+        assert voc_size == len(self.ind2char)
+        
+        if self.lm_ctcdecoder is None:
+            return self.ctc_beam_search(probs, probs_length, beam_size)[0].text
+        
+        return self.lm_ctcdecoder.decode(probs[:probs_length].detach().cpu().numpy(), beam_width=beam_size)
+    
     def ctc_beam_search(self, probs: torch.tensor, probs_length,
                         beam_size: int = 4) -> List[Hypothesis]:
         """

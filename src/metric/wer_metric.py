@@ -40,8 +40,8 @@ class BeamSearchWERMetric(BaseMetric):
         for probs, length, target_text in zip(log_probs, lengths, text):
             target_text = BaseTextEncoder.normalize_text(target_text)
             
-            beam_search_result = self.text_encoder.ctc_beam_search(probs, length, self.beam_size)
-            pred_text = beam_search_result[0].text
+            beam_search_result = self.text_encoder.ctc_beam_search_decode(probs, length, self.beam_size)
+            pred_text = beam_search_result
             
             wers.append(calc_wer(target_text, pred_text))
         

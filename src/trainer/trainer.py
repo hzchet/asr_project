@@ -231,20 +231,19 @@ class Trainer(BaseTrainer):
             wer = calc_wer(target, pred) * 100
             cer = calc_cer(target, pred) * 100
             
-            hypos = self.text_encoder.ctc_beam_search(torch.exp(probs), probs_length, beam_size=4)
-            beamsearch_1 = hypos[0].text
+            beamsearch_1 = self.text_encoder.ctc_beam_search_decode(torch.exp(probs), probs_length, beam_size=4)
             beamsearch_wer = calc_wer(target, beamsearch_1) * 100
             beamsearch_cer = calc_cer(target, beamsearch_1) * 100
             
             rows[Path(audio_path).name] = {
                 "target": target,
-                "argmax raw prediction": raw_pred,
+                "argmax raw predictions": raw_pred,
                 "argmax predictions": pred,
-                "beamsearch top1 prediction": beamsearch_1,
-                "argmax wer": wer,
-                "argmax cer": cer,
-                "beamsearch top1 wer": beamsearch_wer,
-                "beamsearch top1 cer": beamsearch_cer
+                "beamsearch predictions": beamsearch_1,
+                "wer (argmax)": wer,
+                "cer (argmax)": cer,
+                "wer (beamsearch)": beamsearch_wer,
+                "cer (beamsearch)": beamsearch_cer
             }
 
         self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))

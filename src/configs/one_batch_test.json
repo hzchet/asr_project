@@ -87,6 +87,12 @@
       "pct_start": 0.2
     }
   },
+  "text_encoder": {
+    "type": "CTCCharTextEncoder",
+    "args": {
+      "lm_model_path": "saved/lms/3-gram.arpa"
+    }
+  },
   "trainer": {
     "epochs": 50,
     "save_dir": "saved/",
@@ -96,7 +102,7 @@
     "early_stop": 100,
     "visualize": "wandb",
     "wandb_project": "asr_project",
-    "wandb_run_name": "fc_one_batch_beamsearch1_test2",
+    "wandb_run_name": "fc_lm2",
     "len_epoch": 100,
     "grad_norm_clip": 10
   }
