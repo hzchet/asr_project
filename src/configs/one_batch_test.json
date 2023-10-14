@@ -96,7 +96,7 @@
     "early_stop": 100,
     "visualize": "wandb",
     "wandb_project": "asr_project",
-    "wandb_run_name": "fc_one_batch_test",
+    "wandb_run_name": "fc_one_batch_test2",
     "len_epoch": 100,
     "grad_norm_clip": 10
   }
