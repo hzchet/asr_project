@@ -47,7 +47,7 @@ class CTCCharTextEncoder(CharTextEncoder):
         
         state = {('', self.EMPTY_TOK): 1.0}
         for i in range(probs_length):
-            frame = probs[i, :]
+            frame = probs[i]
             state = self._extend_and_merge(frame, state)
             state = self._truncate(state, beam_size)
         

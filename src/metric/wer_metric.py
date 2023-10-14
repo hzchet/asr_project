@@ -28,7 +28,7 @@ class ArgmaxWERMetric(BaseMetric):
 
 
 class BeamSearchWERMetric(BaseMetric):
-    def __init__(self, text_encoder: BaseTextEncoder, beam_size: int, *args, **kwargs):
+    def __init__(self, text_encoder: BaseTextEncoder, beam_size: int = 4, *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert hasattr(text_encoder, "ctc_beam_search")
         self.text_encoder = text_encoder

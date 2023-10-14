@@ -81,7 +81,7 @@
     "type": "OneCycleLR",
     "args": {
       "steps_per_epoch": 100,
-      "epochs": 50,
+      "epochs": 51,
       "anneal_strategy": "cos",
       "max_lr": 1e-2,
       "pct_start": 0.2
@@ -96,7 +96,7 @@
     "early_stop": 100,
     "visualize": "wandb",
     "wandb_project": "asr_project",
-    "wandb_run_name": "fc_one_batch_test2",
+    "wandb_run_name": "fc_one_batch_beamsearch1_test2",
     "len_epoch": 100,
     "grad_norm_clip": 10
   }

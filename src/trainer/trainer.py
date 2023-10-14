@@ -210,31 +210,43 @@ class Trainer(BaseTrainer):
             *args,
             **kwargs,
     ):
-        # TODO: implement logging of beam search results
+        log_probs_ = log_probs[:examples_to_log]
+        log_probs_length_ = log_probs_length[:examples_to_log]
+        
         if self.writer is None:
             return
-        argmax_inds = log_probs.cpu().argmax(-1).numpy()
+            
+        argmax_inds = log_probs_.cpu().argmax(-1).numpy()
         argmax_inds = [
             inds[: int(ind_len)]
-            for inds, ind_len in zip(argmax_inds, log_probs_length.numpy())
+            for inds, ind_len in zip(argmax_inds, log_probs_length_.numpy())
         ]
         argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
         argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
-        tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path))
+        tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path, log_probs_, log_probs_length_))
         shuffle(tuples)
         rows = {}
-        for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
+        for pred, target, raw_pred, audio_path, probs, probs_length in tuples:
             target = BaseTextEncoder.normalize_text(target)
             wer = calc_wer(target, pred) * 100
             cer = calc_cer(target, pred) * 100
-
+            
+            hypos = self.text_encoder.ctc_beam_search(torch.exp(probs), probs_length, beam_size=4)
+            beamsearch_1 = hypos[0].text
+            beamsearch_wer = calc_wer(target, beamsearch_1) * 100
+            beamsearch_cer = calc_cer(target, beamsearch_1) * 100
+            
             rows[Path(audio_path).name] = {
                 "target": target,
-                "raw prediction": raw_pred,
-                "predictions": pred,
-                "wer": wer,
-                "cer": cer,
+                "argmax raw prediction": raw_pred,
+                "argmax predictions": pred,
+                "beamsearch top1 prediction": beamsearch_1,
+                "argmax wer": wer,
+                "argmax cer": cer,
+                "beamsearch top1 wer": beamsearch_wer,
+                "beamsearch top1 cer": beamsearch_cer
             }
+
         self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))
 
     def _log_spectrogram(self, spectrogram_batch):
