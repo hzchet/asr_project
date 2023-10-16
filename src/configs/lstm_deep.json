@@ -1,5 +1,5 @@
 {
-    "name": "lstm_deep",
+    "name": "lstm_deep2",
     "n_gpu": 1,
     "preprocessing": {
       "sr": 16000,
@@ -21,7 +21,7 @@
       "args": {
         "input_size": 256,
         "hidden_size": 512,
-        "num_layers": 1,
+        "num_layers": 2,
         "bidirectional": true
       }
     },
@@ -109,7 +109,7 @@
       "type": "OneCycleLR",
       "args": {
         "steps_per_epoch": 500,
-        "epochs": 101,
+        "epochs": 201,
         "anneal_strategy": "cos",
         "max_lr": 1e-2,
         "pct_start": 0.2
@@ -122,7 +122,7 @@
       }
     },
     "trainer": {
-      "epochs": 100,
+      "epochs": 200,
       "save_dir": "saved/",
       "save_period": 5,
       "verbosity": 2,
@@ -130,10 +130,10 @@
       "early_stop": 100,
       "visualize": "wandb",
       "wandb_project": "asr_project",
-      "wandb_run_name": "lstm_bidirectional",
+      "wandb_run_name": "lstm_bidirectional_2layer",
       "len_epoch": 500,
       "grad_norm_clip": 10,
-      "num_accumulation_iters": 5
+      "num_accumulation_iters": 10
     }
   }
   
