@@ -1,0 +1,122 @@
+{
+    "name": "lstm_baseline",
+    "n_gpu": 1,
+    "preprocessing": {
+      "sr": 16000,
+      "spectrogram": {
+        "type": "MelSpectrogram",
+        "args": {
+          "n_fft": 512,
+          "n_mels": 256
+        }
+      },
+      "log_spec": true
+    },
+    "augmentations": {
+      "wave": [],
+      "spectrogram": []
+    },
+    "arch": {
+      "type": "LSTMBaseline",
+      "args": {
+        "input_size": 256,
+        "hidden_size": 512
+      }
+    },
+    "data": {
+      "train": {
+        "batch_size": 32,
+        "num_workers": 6,
+        "datasets": [
+          {
+            "type": "LibrispeechDataset",
+            "args": {
+              "part": "train-clean-100",
+              "max_audio_length": 20.0,
+              "max_text_length": 200,
+              "limit": null
+            }
+          },
+          {
+            "type": "LibrispeechDataset",
+            "args": {
+              "part": "train-clean-360",
+              "max_audio_length": 20.0,
+              "max_text_length": 200,
+              "limit": null
+            }
+          }
+        ]
+      },
+      "test-clean": {
+        "batch_size": 32,
+        "num_workers": 6,
+        "datasets": [
+          {
+            "type": "LibrispeechDataset",
+            "args": {
+              "part": "test-clean",
+              "max_audio_length": 20.0,
+              "max_text_length": 200,
+              "limit": null
+            }
+          }
+        ]
+      }
+    },
+    "optimizer": {
+      "type": "AdamW",
+      "args": {
+        "lr": 3e-4
+      }
+    },
+    "loss": {
+      "type": "CTCLoss",
+      "args": {}
+    },
+    "metrics": [
+      {
+        "type": "ArgmaxWERMetric",
+        "args": {
+          "name": "WER (argmax)"
+        }
+      },
+      {
+        "type": "ArgmaxCERMetric",
+        "args": {
+          "name": "CER (argmax)"
+        }
+      }
+    ],
+    "lr_scheduler": {
+      "type": "OneCycleLR",
+      "args": {
+        "steps_per_epoch": 500,
+        "epochs": 101,
+        "anneal_strategy": "cos",
+        "max_lr": 1e-2,
+        "pct_start": 0.2
+      }
+    },
+    "text_encoder": {
+      "type": "CTCCharTextEncoder",
+      "args": {
+        "lm_model_path": "saved/lms/3-gram.arpa"
+      }
+    },
+    "trainer": {
+      "epochs": 100,
+      "save_dir": "saved/",
+      "save_period": 5,
+      "verbosity": 2,
+      "monitor": "min val_loss",
+      "early_stop": 100,
+      "visualize": "wandb",
+      "wandb_project": "asr_project",
+      "wandb_run_name": "lstm",
+      "len_epoch": 500,
+      "grad_norm_clip": 10,
+      "num_accumulation_iters": 5
+    }
+  }
+  

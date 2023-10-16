@@ -4,10 +4,12 @@ import os
 from pathlib import Path
 
 import torch
+import pandas as pd
 from tqdm import tqdm
 
 import src.model as module_model
 from src.trainer import Trainer
+from src.metric.utils import calc_wer, calc_cer
 from src.utils import ROOT_PATH
 from src.utils.object_loading import get_dataloaders
 from src.utils.parse_config import ConfigParser
@@ -45,7 +47,7 @@ def main(config, out_file):
     results = []
 
     with torch.no_grad():
-        for batch_num, batch in enumerate(tqdm(dataloaders["test"])):
+        for batch_num, batch in enumerate(tqdm(dataloaders["test-clean"])):
             batch = Trainer.move_batch_to_device(batch, device)
             output = model(**batch)
             if type(output) is dict:
@@ -61,15 +63,60 @@ def main(config, out_file):
             for i in range(len(batch["text"])):
                 argmax = batch["argmax"][i]
                 argmax = argmax[: int(batch["log_probs_length"][i])]
+                ground_truth = batch["text"][i]
+                
+                pred_text_argmax = text_encoder.ctc_decode(argmax.cpu().numpy())
+                pred_text_beam_search = text_encoder.lib_ctc_beam_search_decode(
+                    batch["probs"][i], batch["log_probs_length"][i], beam_size=10
+                )
+                pred_text_lm_beam_search = text_encoder.ctc_beam_search_decode(
+                    batch["probs"][i], batch["log_probs_length"][i], beam_size=10
+                )
+                
+                argmax_wer = calc_wer(ground_truth, pred_text_argmax)
+                argmax_cer = calc_cer(ground_truth, pred_text_argmax)
+                beam_search_wer = calc_wer(ground_truth, pred_text_beam_search)
+                beam_search_cer = calc_cer(ground_truth, pred_text_beam_search)
+                lm_beam_search_wer = calc_wer(ground_truth, pred_text_lm_beam_search)
+                lm_beam_search_cer = calc_cer(ground_truth, pred_text_lm_beam_search)
+                
                 results.append(
                     {
-                        "ground_trurh": batch["text"][i],
-                        "pred_text_argmax": text_encoder.ctc_decode(argmax.cpu().numpy()),
-                        "pred_text_beam_search": text_encoder.ctc_beam_search(
-                            batch["probs"][i], batch["log_probs_length"][i], beam_size=100
-                        )[:10],
+                        "ground_truth": ground_truth,
+                        "pred_text_argmax": pred_text_argmax,
+                        "pred_text_beam_search": pred_text_beam_search,
+                        "pred_text_lm_beam_search": pred_text_lm_beam_search,
+                        "argmax_wer": argmax_wer,
+                        "argmax_cer": argmax_cer,
+                        "beam_search_wer": beam_search_wer,
+                        "beam_search_cer": beam_search_cer,
+                        "lm_beam_search_wer": lm_beam_search_wer,
+                        "lm_beam_search_cer": lm_beam_search_cer
                     }
                 )
+        table_dict = [
+            {
+                'strategy': 'argmax', 
+                'wer': sum([r['argmax_wer'] for r in results]) / len(results),
+                'cer': sum([r['argmax_cer'] for r in results]) / len(results)
+            },
+            {
+                'strategy': 'beam_search',
+                'wer': sum([r['beam_search_wer'] for r in results]) / len(results),
+                'cer': sum([r['beam_search_cer'] for r in results]) / len(results)
+            },
+            {
+                'strategy': 'lm_beam_search',
+                'wer': sum([r['lm_beam_search_wer'] for r in results]) / len(results),
+                'cer': sum([r['lm_beam_search_cer'] for r in results]) / len(results)
+            }
+        ]
+        table = pd.DataFrame(table_dict)
+        table = table.set_index('strategy')
+        table.to_csv("test_metrics.csv", index=False)
+        print(table)
+            
+            
     with Path(out_file).open("w") as f:
         json.dump(results, f, indent=2)
 
@@ -165,8 +212,6 @@ if __name__ == "__main__":
             }
         }
 
-    assert config.config.get("data", {}).get("test", None) is not None
-    config["data"]["test"]["batch_size"] = args.batch_size
-    config["data"]["test"]["n_jobs"] = args.jobs
+    assert config.config.get("data", {}).get("test-clean", None) is not None
 
     main(config, args.output)

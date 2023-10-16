@@ -58,6 +58,8 @@ class Trainer(BaseTrainer):
         self.evaluation_metrics = MetricTracker(
             "loss", *[m.name for m in self.metrics], writer=self.writer
         )
+        
+        self.num_accumulation_iters = self.config["trainer"].get("num_accumulation_iters", 1)
 
     @staticmethod
     def move_batch_to_device(batch, device: torch.device):
@@ -93,6 +95,7 @@ class Trainer(BaseTrainer):
                     batch,
                     is_train=True,
                     metrics=self.train_metrics,
+                    batch_idx=batch_idx
                 )
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
@@ -132,7 +135,7 @@ class Trainer(BaseTrainer):
 
         return log
 
-    def process_batch(self, batch, is_train: bool, metrics: MetricTracker):
+    def process_batch(self, batch, is_train: bool, metrics: MetricTracker, batch_idx: int):
         batch = self.move_batch_to_device(batch, self.device)
         if is_train:
             self.optimizer.zero_grad()
@@ -146,11 +149,12 @@ class Trainer(BaseTrainer):
         batch["log_probs_length"] = self.model.transform_input_lengths(
             batch["spectrogram_length"]
         )
-        batch["loss"] = self.criterion(**batch)
+        batch["loss"] = self.criterion(**batch) / self.num_accumulation_iters
         if is_train:
             batch["loss"].backward()
             self._clip_grad_norm()
-            self.optimizer.step()
+            if (batch_idx + 1) % self.num_accumulation_iters == 0 or (batch_idx + 1) == self.len_epoch:
+                self.optimizer.step()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
@@ -179,6 +183,7 @@ class Trainer(BaseTrainer):
                     batch,
                     is_train=False,
                     metrics=self.evaluation_metrics,
+                    batch_idx=batch_idx
                 )
             self.writer.set_step(epoch * self.len_epoch, part)
             self._log_scalars(self.evaluation_metrics)
