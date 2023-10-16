@@ -26,7 +26,8 @@ class Trainer(BaseTrainer):
             self,
             model,
             criterion,
-            metrics,
+            train_metrics,
+            valid_metrics,
             optimizer,
             config,
             device,
@@ -36,7 +37,7 @@ class Trainer(BaseTrainer):
             len_epoch=None,
             skip_oom=True,
     ):
-        super().__init__(model, criterion, metrics, optimizer, config, device)
+        super().__init__(model, criterion, train_metrics, valid_metrics, optimizer, config, device)
         self.skip_oom = skip_oom
         self.text_encoder = text_encoder
         self.config = config
@@ -53,10 +54,10 @@ class Trainer(BaseTrainer):
         self.log_step = 50
 
         self.train_metrics = MetricTracker(
-            "loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
+            "loss", "grad norm", *[m.name for m in self.train_metrics], writer=self.writer
         )
         self.evaluation_metrics = MetricTracker(
-            "loss", *[m.name for m in self.metrics], writer=self.writer
+            "loss", *[m.name for m in self.valid_metrics], writer=self.writer
         )
         
         self.num_accumulation_iters = self.config["trainer"].get("num_accumulation_iters", 1)
