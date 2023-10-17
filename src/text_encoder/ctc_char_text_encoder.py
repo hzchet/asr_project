@@ -1,3 +1,4 @@
+import logging
 from typing import List, NamedTuple, Dict, Tuple
 from collections import defaultdict
 
@@ -5,6 +6,8 @@ import torch
 from pyctcdecode import build_ctcdecoder
 
 from .char_text_encoder import CharTextEncoder
+
+logger = logging.getLogger(__name__)
 
 
 class Hypothesis(NamedTuple):
@@ -52,6 +55,7 @@ class CTCCharTextEncoder(CharTextEncoder):
         assert len(probs.shape) == 2
         char_length, voc_size = probs.shape
         assert voc_size == len(self.ind2char)
+        
         return self.lib_ctcdecoder.decode(probs[:probs_length].detach().cpu().numpy(), beam_width=beam_size).lower().replace("'", '')
     
     def ctc_beam_search_decode(self, probs: torch.tensor, probs_length,
@@ -61,7 +65,7 @@ class CTCCharTextEncoder(CharTextEncoder):
         assert voc_size == len(self.ind2char)
         
         if self.lm_ctcdecoder is None:
-            return self.ctc_beam_search(probs, probs_length, beam_size)[0].text
+            return self.lib_ctc_beam_search_decode(probs, probs_length, beam_size)
         
         return self.lm_ctcdecoder.decode(probs[:probs_length].detach().cpu().numpy(), beam_width=beam_size).lower().replace("'", '')
     
