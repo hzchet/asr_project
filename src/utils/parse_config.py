@@ -15,7 +15,7 @@ from src.utils import read_json, write_json, ROOT_PATH
 
 
 class ConfigParser:
-    def __init__(self, config, resume=None, modification=None, run_id=None):
+    def __init__(self, config, resume=None, finetune=None, modification=None, run_id=None):
         """
         class to parse configuration json file. Handles hyperparameters for training,
         initializations of modules, checkpoint saving and logging module.
@@ -30,6 +30,7 @@ class ConfigParser:
         # load config file and apply modification
         self._config = _update_config(config, modification)
         self.resume = resume
+        self.finetune = finetune
         self._text_encoder = None
 
         # set save_dir where trained model and log will be saved.
@@ -58,6 +59,7 @@ class ConfigParser:
         """
         Initialize this class from some cli arguments. Used in train, test.
         """
+        resume, fintune = None, None
         for opt in options:
             args.add_argument(*opt.flags, default=None, type=opt.type)
         if not isinstance(args, tuple):
@@ -65,6 +67,10 @@ class ConfigParser:
 
         if args.device is not None:
             os.environ["CUDA_VISIBLE_DEVICES"] = args.device
+            
+        if args.finetune is not None:
+            finetune = Path(args.finetune)    
+            
         if args.resume is not None:
             resume = Path(args.resume)
             cfg_fname = resume.parent / "config.json"
@@ -72,19 +78,18 @@ class ConfigParser:
             msg_no_cfg = "Configuration file need to be specified. " \
                          "Add '-c config.json', for example."
             assert args.config is not None, msg_no_cfg
-            resume = None
             cfg_fname = Path(args.config)
-
+            
         config = read_json(cfg_fname)
         if args.config and resume:
-            # update new config for fine-tuning
+            # update new config for resuming training
             config.update(read_json(args.config))
 
         # parse custom cli options into dictionary
         modification = {
             opt.target: getattr(args, _get_opt_name(opt.flags)) for opt in options
         }
-        return cls(config, resume, modification)
+        return cls(config, resume, finetune, modification)
 
     @staticmethod
     def init_obj(obj_dict, default_module, *args, **kwargs):

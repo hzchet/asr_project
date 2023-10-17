@@ -56,6 +56,9 @@ class BaseTrainer:
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
+            
+        if config.finetune is not None:
+            self._load_pretrained_model(config.finetune)
 
     @abstractmethod
     def _train_epoch(self, epoch):
@@ -156,7 +159,28 @@ class BaseTrainer:
             best_path = str(self.checkpoint_dir / "model_best.pth")
             torch.save(state, best_path)
             self.logger.info("Saving current best: model_best.pth ...")
-
+    
+    def _load_pretrained_model(self, ckpt_path):
+        """
+        Load pretrained model
+        
+        :param ckpt_path: Checkpoint path to be finetuned
+        """
+        ckpt_path = str(ckpt_path)
+        self.logger.info("Loading checkpoint: {} ...".format(ckpt_path))
+        checkpoint = torch.load(ckpt_path, self.device)
+        
+        # load architecture params from checkpoint.
+        if checkpoint["config"]["arch"] != self.config["arch"]:
+            self.logger.warning(
+                "Warning: Architecture configuration given in config file is different from that "
+                "of checkpoint. This may yield an exception while state_dict is being loaded."
+            )
+        self.model.load_state_dict(checkpoint["state_dict"])
+        self.logger.info(
+            "Checkpoint loaded. Fine-tuning model..."
+        )
+    
     def _resume_checkpoint(self, resume_path):
         """
         Resume from saved checkpoints
