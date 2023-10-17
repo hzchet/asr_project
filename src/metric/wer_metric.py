@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 import torch
@@ -6,6 +7,8 @@ from torch import Tensor
 from src.base.base_metric import BaseMetric
 from src.base.base_text_encoder import BaseTextEncoder
 from src.metric.utils import calc_wer
+
+logger = logging.getLogger(__name__)
 
 
 class ArgmaxWERMetric(BaseMetric):
@@ -40,7 +43,8 @@ class BeamSearchWERMetric(BaseMetric):
         for probs, length, target_text in zip(log_probs, lengths, text):
             target_text = BaseTextEncoder.normalize_text(target_text)
             
-            beam_search_result = self.text_encoder.ctc_beam_search_decode(probs, length, self.beam_size)
+
+            beam_search_result = self.text_encoder.ctc_beam_search_decode(probs.exp(), length, self.beam_size)
             pred_text = beam_search_result
             
             wers.append(calc_wer(target_text, pred_text))

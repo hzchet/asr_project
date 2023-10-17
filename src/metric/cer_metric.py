@@ -39,8 +39,8 @@ class BeamSearchCERMetric(BaseMetric):
         lengths = log_probs_length.detach().numpy()
         for probs, length, target_text in zip(log_probs, lengths, text):
             target_text = BaseTextEncoder.normalize_text(target_text)
-            
-            beam_search_result = self.text_encoder.ctc_beam_search_decode(probs, length, self.beam_size)
+
+            beam_search_result = self.text_encoder.ctc_beam_search_decode(probs.exp(), length, self.beam_size)
             pred_text = beam_search_result
             
             cers.append(calc_cer(target_text, pred_text))
