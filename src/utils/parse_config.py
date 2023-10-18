@@ -59,7 +59,7 @@ class ConfigParser:
         """
         Initialize this class from some cli arguments. Used in train, test.
         """
-        resume, fintune = None, None
+        resume, finetune = None, None
         for opt in options:
             args.add_argument(*opt.flags, default=None, type=opt.type)
         if not isinstance(args, tuple):
