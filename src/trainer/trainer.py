@@ -125,6 +125,7 @@ class Trainer(BaseTrainer):
                 )
                 self._log_predictions(**batch)
                 self._log_spectrogram(batch["spectrogram"])
+                self._log_audio(batch["audio"])
                 self._log_scalars(self.train_metrics_tracker)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
@@ -197,6 +198,7 @@ class Trainer(BaseTrainer):
             self._log_scalars(self.evaluation_metrics_tracker)
             self._log_predictions(**batch)
             self._log_spectrogram(batch["spectrogram"])
+            self._log_audio(batch["audio"])
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
@@ -219,7 +221,7 @@ class Trainer(BaseTrainer):
             log_probs,
             log_probs_length,
             audio_path,
-            examples_to_log=10,
+            examples_to_log: int = 10,
             *args,
             **kwargs,
     ):
@@ -266,6 +268,11 @@ class Trainer(BaseTrainer):
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram))
         self.writer.add_image("spectrogram", ToTensor()(image))
 
+    def _log_audio(self, audio_batch):
+        audio_to_log = random.choice(audio_batch)
+        sample_rate = self.config["preprocessing"].get("sr")
+        self.writer.add_audio("audio", audio_to_log, sample_rate)
+    
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):
         parameters = self.model.parameters()
