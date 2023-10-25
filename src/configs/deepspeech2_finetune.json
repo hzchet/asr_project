@@ -1,18 +1,15 @@
 {
-  "name": "deepspeech_layernorm_one_batch_test",
+  "name": "deepspeech2_finetune_continued2",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
     "spectrogram": {
       "type": "MelSpectrogram",
       "args": {
+        "n_mels": 128
       }
     },
     "log_spec": true
-  },
-  "augmentations": {
-    "wave": [],
-    "spectrogram": []
   },
   "arch": {
     "type": "DeepSpeech2",
@@ -24,37 +21,48 @@
       "paddings": [[20, 5], [10, 5]],
       "hidden_size": 512,
       "bidirectional": true,
-      "num_rnn_blocks": 5,
-      "rnn_norm": "layernorm"
+      "num_rnn_blocks": 5
     }
   },
   "data": {
     "train": {
-      "batch_size": 10,
-      "num_workers": 0,
+      "batch_size": 64,
+      "num_workers": 6,
       "datasets": [
         {
           "type": "LibrispeechDataset",
           "args": {
-            "part": "dev-clean",
+            "part": "train-other-500",
             "max_audio_length": 20.0,
-            "max_text_length": 200,
-            "limit": 10
+            "max_text_length": 200
           }
         }
       ]
     },
     "val": {
-      "batch_size": 10,
-      "num_workers": 0,
+      "batch_size": 64,
+      "num_workers": 6,
       "datasets": [
         {
           "type": "LibrispeechDataset",
           "args": {
-            "part": "dev-clean",
+            "part": "test-clean",
             "max_audio_length": 20.0,
-            "max_text_length": 200,
-            "limit": 10
+            "max_text_length": 200
+          }
+        }
+      ]
+    },
+    "test-other": {
+      "batch_size": 64,
+      "num_workers": 6,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "test-other",
+            "max_audio_length": 20.0,
+            "max_text_length": 200
           }
         }
       ]
@@ -113,7 +121,7 @@
   "lr_scheduler": {
     "type": "OneCycleLR",
     "args": {
-      "steps_per_epoch": 100,
+      "steps_per_epoch": 500,
       "epochs": 51,
       "anneal_strategy": "cos",
       "max_lr": 3e-4,
@@ -123,6 +131,7 @@
   "text_encoder": {
     "type": "CTCCharTextEncoder",
     "args": {
+      "lm_model_path": "saved/lms/3-gram.arpa"
     }
   },
   "trainer": {
@@ -134,8 +143,8 @@
     "early_stop": 100,
     "visualize": "wandb",
     "wandb_project": "asr_project",
-    "wandb_run_name": "DeepSpeech w LayerNorm test",
-    "len_epoch": 100,
+    "wandb_run_name": "DeepSpeech_finetuned2",
+    "len_epoch": 500,
     "grad_norm_clip": 10
   }
 }
