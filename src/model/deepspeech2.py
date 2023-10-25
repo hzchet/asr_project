@@ -6,23 +6,40 @@ import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
-class BatchRNN(nn.Module):
+class NormalizedRNN(nn.Module):
     def __init__(
         self,
         input_size: int,
         rnn_type: Type = nn.GRU,
         hidden_size: int = 800,
-        bidirectional: bool = True
+        bidirectional: bool = True,
+        rnn_norm: str = None
     ):
         super().__init__()
+        assert rnn_norm in ('batchnorm', 'layernorm', None)
+        
         D = 2 if bidirectional else 1
         self.rnn = rnn_type(input_size, hidden_size, bidirectional=bidirectional, batch_first=True)
-        self.bn = nn.BatchNorm2d(D * hidden_size)
+        if rnn_norm == 'batchnorm':
+            self.rnn_norm = nn.BatchNorm1d(D * hidden_size)
+        elif rnn_norm == 'layernorm':
+            self.rnn_norm = nn.LayerNorm(D * hidden_size)
+        else:
+            self.rnn_norm = nn.Identity()
     
     def forward(self, x, lengths, h=None):
         packed = pack_padded_sequence(x, lengths, batch_first=True, enforce_sorted=False)
         x, h = self.rnn(packed, h)
-        x, lengths = pad_packed_sequence(x, batch_first=True)
+        
+        padded, lengths = pad_packed_sequence(x, batch_first=True)
+        
+        if isinstance(self.rnn_norm, nn.BatchNorm1d):
+            padded = padded.transpose(1, 2)
+            
+        x = self.rnn_norm(padded)
+        
+        if isinstance(self.rnn_norm, nn.BatchNorm1d):
+            x = x.transpose(1, 2)
         
         return x, lengths, h
 
@@ -34,12 +51,13 @@ class DeepSpeech2(nn.Module):
         kernel_sizes: List[Tuple[int, int]], 
         strides: List[Tuple[int, int]],
         paddings: List[Tuple[int, int]],
-        n_feats: int,
-        n_class: int,
+        n_feats: int = 128,
+        n_class: int = 28,
         rnn_type: Type = nn.GRU,
         hidden_size: int = 800,
         bidirectional: bool = True,
         num_rnn_blocks: int = 5,
+        rnn_norm: str = None,
         **batch
     ):
         super().__init__()
@@ -51,7 +69,7 @@ class DeepSpeech2(nn.Module):
         self.conv_blocks, rnn_input_size = self._init_conv_blocks(n_feats, channels, kernel_sizes, 
                                                                   strides, paddings)
         self.rnn_blocks, fc_in_features = self._init_rnn_blocks(rnn_input_size, rnn_type, hidden_size, 
-                                                bidirectional, num_rnn_blocks)
+                                                bidirectional, rnn_norm, num_rnn_blocks)
         self.fc = nn.Linear(fc_in_features, n_class)
         
     def _init_conv_blocks(
@@ -60,7 +78,7 @@ class DeepSpeech2(nn.Module):
         channels: List[int], 
         kernel_sizes: List[Tuple[int, int]], 
         strides: List[Tuple[int, int]],
-        paddings: List[Tuple[int, int]]
+        paddings: List[Tuple[int, int]],
     ):
         assert len(channels) == len(kernel_sizes) == len(strides) == len(paddings)
         self.num_conv_layers = len(channels)
@@ -73,8 +91,9 @@ class DeepSpeech2(nn.Module):
                 nn.Conv2d(in_channels=channels[i], out_channels=channels[i + 1], 
                           kernel_size=kernel_sizes[i], stride=strides[i], padding=paddings[i]),
                 nn.BatchNorm2d(channels[i + 1]),
-                nn.Hardtanh(0, 20, inplace=True),
+                nn.Hardtanh(0, 20, inplace=True)
             ))
+            
             C = channels[i + 1]
             H = int(math.floor((H + 2 * paddings[i][0] - (kernel_sizes[i][0] - 1) - 1) / strides[i][0] + 1))
         
@@ -86,12 +105,14 @@ class DeepSpeech2(nn.Module):
         rnn_type: Type = nn.GRU,
         hidden_size: int = 800,
         bidirectional: bool = True,
+        rnn_norm: str = None,
         num_rnn_blocks: int = 5
     ):
+        assert rnn_norm in ('batchnorm', 'layernorm', None)
         D = 2 if bidirectional else 1
         rnn_blocks = []
         for i in range(num_rnn_blocks):
-            rnn_blocks.append(BatchRNN(input_size, rnn_type, hidden_size, bidirectional))
+            rnn_blocks.append(NormalizedRNN(input_size, rnn_type, hidden_size, bidirectional, rnn_norm))
             input_size = D * hidden_size
 
         return nn.ModuleList(rnn_blocks), D * hidden_size
