@@ -47,74 +47,76 @@ def main(config, out_file):
     results = []
 
     with torch.no_grad():
-        for batch_num, batch in enumerate(tqdm(dataloaders["test-clean"])):
-            batch = Trainer.move_batch_to_device(batch, device)
-            output = model(**batch)
-            if type(output) is dict:
-                batch.update(output)
-            else:
-                batch["logits"] = output
-            batch["log_probs"] = torch.log_softmax(batch["logits"], dim=-1)
-            batch["log_probs_length"] = model.transform_input_lengths(
-                batch["spectrogram_length"]
-            )
-            batch["probs"] = batch["log_probs"].exp().cpu()
-            batch["argmax"] = batch["probs"].argmax(-1)
-            for i in range(len(batch["text"])):
-                argmax = batch["argmax"][i]
-                argmax = argmax[: int(batch["log_probs_length"][i])]
-                ground_truth = batch["text"][i]
-                
-                pred_text_argmax = text_encoder.ctc_decode(argmax.cpu().numpy())
-                pred_text_beam_search = text_encoder.lib_ctc_beam_search_decode(
-                    batch["probs"][i], batch["log_probs_length"][i], beam_size=10
+        for key in ['test-other', 'test-clean']:
+            logger.info(f'{key}:')
+            for batch_num, batch in enumerate(tqdm(dataloaders[key])):
+                batch = Trainer.move_batch_to_device(batch, device)
+                output = model(**batch)
+                if type(output) is dict:
+                    batch.update(output)
+                else:
+                    batch["logits"] = output
+                batch["log_probs"] = torch.log_softmax(batch["logits"], dim=-1)
+                batch["log_probs_length"] = model.transform_input_lengths(
+                    batch["spectrogram_length"]
                 )
-                pred_text_lm_beam_search = text_encoder.ctc_beam_search_decode(
-                    batch["probs"][i], batch["log_probs_length"][i], beam_size=10
-                )
-                
-                argmax_wer = calc_wer(ground_truth, pred_text_argmax)
-                argmax_cer = calc_cer(ground_truth, pred_text_argmax)
-                beam_search_wer = calc_wer(ground_truth, pred_text_beam_search)
-                beam_search_cer = calc_cer(ground_truth, pred_text_beam_search)
-                lm_beam_search_wer = calc_wer(ground_truth, pred_text_lm_beam_search)
-                lm_beam_search_cer = calc_cer(ground_truth, pred_text_lm_beam_search)
-                
-                results.append(
-                    {
-                        "ground_truth": ground_truth,
-                        "pred_text_argmax": pred_text_argmax,
-                        "pred_text_beam_search": pred_text_beam_search,
-                        "pred_text_lm_beam_search": pred_text_lm_beam_search,
-                        "argmax_wer": argmax_wer,
-                        "argmax_cer": argmax_cer,
-                        "beam_search_wer": beam_search_wer,
-                        "beam_search_cer": beam_search_cer,
-                        "lm_beam_search_wer": lm_beam_search_wer,
-                        "lm_beam_search_cer": lm_beam_search_cer
-                    }
-                )
-        table_dict = [
-            {
-                'strategy': 'argmax', 
-                'wer': sum([r['argmax_wer'] for r in results]) / len(results),
-                'cer': sum([r['argmax_cer'] for r in results]) / len(results)
-            },
-            {
-                'strategy': 'beam_search',
-                'wer': sum([r['beam_search_wer'] for r in results]) / len(results),
-                'cer': sum([r['beam_search_cer'] for r in results]) / len(results)
-            },
-            {
-                'strategy': 'lm_beam_search',
-                'wer': sum([r['lm_beam_search_wer'] for r in results]) / len(results),
-                'cer': sum([r['lm_beam_search_cer'] for r in results]) / len(results)
-            }
-        ]
-        table = pd.DataFrame(table_dict)
-        table = table.set_index('strategy')
-        table.to_csv("test_metrics.csv", index=False)
-        print(table)
+                batch["probs"] = batch["log_probs"].exp().cpu()
+                batch["argmax"] = batch["probs"].argmax(-1)
+                for i in range(len(batch["text"])):
+                    argmax = batch["argmax"][i]
+                    argmax = argmax[: int(batch["log_probs_length"][i])]
+                    ground_truth = batch["text"][i]
+                    
+                    pred_text_argmax = text_encoder.ctc_decode(argmax.cpu().numpy())
+                    # pred_text_beam_search = text_encoder.lib_ctc_beam_search_decode(
+                    #     batch["probs"][i], batch["log_probs_length"][i], beam_size=100
+                    # )
+                    pred_text_lm_beam_search = text_encoder.ctc_beam_search_decode(
+                        batch["probs"][i], batch["log_probs_length"][i], beam_size=1000
+                    )
+                    
+                    argmax_wer = calc_wer(ground_truth, pred_text_argmax)
+                    argmax_cer = calc_cer(ground_truth, pred_text_argmax)
+                    # beam_search_wer = calc_wer(ground_truth, pred_text_beam_search)
+                    # beam_search_cer = calc_cer(ground_truth, pred_text_beam_search)
+                    lm_beam_search_wer = calc_wer(ground_truth, pred_text_lm_beam_search)
+                    lm_beam_search_cer = calc_cer(ground_truth, pred_text_lm_beam_search)
+                    
+                    results.append(
+                        {
+                            "ground_truth": ground_truth,
+                            "pred_text_argmax": pred_text_argmax,
+                            # "pred_text_beam_search": pred_text_beam_search,
+                            "pred_text_lm_beam_search": pred_text_lm_beam_search,
+                            "argmax_wer": argmax_wer,
+                            "argmax_cer": argmax_cer,
+                            # "beam_search_wer": beam_search_wer,
+                            # "beam_search_cer": beam_search_cer,
+                            "lm_beam_search_wer": lm_beam_search_wer,
+                            "lm_beam_search_cer": lm_beam_search_cer
+                        }
+                    )
+            table_dict = [
+                {
+                    'strategy': 'argmax', 
+                    'wer': sum([r['argmax_wer'] for r in results]) / len(results),
+                    'cer': sum([r['argmax_cer'] for r in results]) / len(results)
+                },
+                # {
+                #     'strategy': 'beam_search',
+                #     'wer': sum([r['beam_search_wer'] for r in results]) / len(results),
+                #     'cer': sum([r['beam_search_cer'] for r in results]) / len(results)
+                # },
+                {
+                    'strategy': 'lm_beam_search',
+                    'wer': sum([r['lm_beam_search_wer'] for r in results]) / len(results),
+                    'cer': sum([r['lm_beam_search_cer'] for r in results]) / len(results)
+                }
+            ]
+            table = pd.DataFrame(table_dict)
+            table = table.set_index('strategy')
+            table.to_csv(f"{key}_metrics.csv", index=True)
+            logger.info(table)
             
             
     with Path(out_file).open("w") as f:
@@ -212,6 +214,6 @@ if __name__ == "__main__":
             }
         }
 
-    assert config.config.get("data", {}).get("test-clean", None) is not None
+    # assert config.config.get("data", {}).get("test-clean", None) is not None
 
     main(config, args.output)
