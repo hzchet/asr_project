@@ -1,7 +1,3 @@
-from src.augmentations.spectrogram_augmentations.time_stretch import TimeStretch, RandomTimeStretch
-
-
-__all__ = [
-    'TimeStretch',
-    'RandomTimeStretch'
-]
+from src.augmentations.spectrogram_augmentations.time_stretch import *
+from src.augmentations.spectrogram_augmentations.frequency_masking import *
+from src.augmentations.spectrogram_augmentations.time_masking import *
