@@ -158,7 +158,7 @@
   "text_encoder": {
     "type": "CTCCharTextEncoder",
     "args": {
-      "lm_model_path": "saved/lms/3-gram.arpa"
+      "lm_model_path": "saved/lms/4-gram.arpa"
     }
   },
   "trainer": {

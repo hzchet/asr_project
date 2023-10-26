@@ -1,8 +1,17 @@
-speechbrain
-datasets
-torch_audiomentations
-editdistance
-wandb
-pyctcdecode
-torchaudio
-pillow
+torch==2.1.0
+torchvision @ file:///opt/pytorch/vision
+numpy==1.22.2
+tqdm==4.64.1
+matplotlib==3.6.2
+pandas==1.5.2
+
+speechbrain==0.5.15
+datasets==2.14.5
+torch-audiomentations==0.11.0
+editdistance==0.6.2
+wandb==0.15.12
+pyctcdecode==0.5.0
+torchaudio==2.1.0
+Pillow==9.2.0
+pypi-kenlm==0.1.20220713
+gdown==4.7.1
