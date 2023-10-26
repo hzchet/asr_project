@@ -5,7 +5,7 @@ This repository contains the implementation of the DeepSpeech2 model for the ASR
 To reproduce the final model's result train your model with the `src/configs/deepspeech2_augs.json` configuration for 75 epochs.
 
 # Results
-WER = $0.276992$ and CER = $$0.125911$ were achieved on `test-other` split by the final model (using beam-search + language model).
+WER = $0.276992$ and CER = $0.125911$ were achieved on `test-other` split by the final model (using beam-search + language model).
 
 # Installation
 - Clone this repository
