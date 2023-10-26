@@ -21,7 +21,8 @@
       "paddings": [[20, 5], [10, 5]],
       "hidden_size": 512,
       "bidirectional": true,
-      "num_rnn_blocks": 5
+      "num_rnn_blocks": 5,
+      "rnn_norm": null
     }
   },
   "data": {

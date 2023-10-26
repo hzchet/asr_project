@@ -1,5 +1,5 @@
 {
-  "name": "deepspeech_layernorm_one_batch_test",
+  "name": "deepspeech_bpe_one_batch_test",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -24,8 +24,7 @@
       "paddings": [[20, 5], [10, 5]],
       "hidden_size": 512,
       "bidirectional": true,
-      "num_rnn_blocks": 5,
-      "rnn_norm": "layernorm"
+      "num_rnn_blocks": 5
     }
   },
   "data": {
@@ -96,18 +95,6 @@
       "args": {
         "name": "CER (argmax)"
       }
-    },
-    {
-      "type": "BeamSearchWERMetric",
-      "args": {
-        "name": "WER (beam_search)"
-      }
-    },
-    {
-      "type": "BeamSearchCERMetric",
-      "args": {
-        "name": "CER (beam_search)"
-      }
     }
   ],
   "lr_scheduler": {
@@ -121,7 +108,7 @@
     }
   },
   "text_encoder": {
-    "type": "CTCCharTextEncoder",
+    "type": "BPETextEncoder",
     "args": {
     }
   },
@@ -134,7 +121,7 @@
     "early_stop": 100,
     "visualize": "wandb",
     "wandb_project": "asr_project",
-    "wandb_run_name": "DeepSpeech w LayerNorm test",
+    "wandb_run_name": "DeepSpeech w BPE test",
     "len_epoch": 100,
     "grad_norm_clip": 10
   }
