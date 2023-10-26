@@ -44,11 +44,10 @@ def main(config, out_file):
     model = model.to(device)
     model.eval()
 
-    results = []
-
     with torch.no_grad():
         for key in ['test-other', 'test-clean']:
             logger.info(f'{key}:')
+            results = []
             for batch_num, batch in enumerate(tqdm(dataloaders[key])):
                 batch = Trainer.move_batch_to_device(batch, device)
                 output = model(**batch)
@@ -68,11 +67,11 @@ def main(config, out_file):
                     ground_truth = batch["text"][i]
                     
                     pred_text_argmax = text_encoder.ctc_decode(argmax.cpu().numpy())
-                    # pred_text_beam_search = text_encoder.lib_ctc_beam_search_decode(
-                    #     batch["probs"][i], batch["log_probs_length"][i], beam_size=100
+                    # pred_text_beam_search = text_encoder.ctc_beam_search_decode(
+                    #     batch["probs"][i], batch["log_probs_length"][i], beam_size=2, use_lm=False
                     # )
                     pred_text_lm_beam_search = text_encoder.ctc_beam_search_decode(
-                        batch["probs"][i], batch["log_probs_length"][i], beam_size=1000
+                        batch["probs"][i], batch["log_probs_length"][i], beam_size=100
                     )
                     
                     argmax_wer = calc_wer(ground_truth, pred_text_argmax)
@@ -86,7 +85,7 @@ def main(config, out_file):
                         {
                             "ground_truth": ground_truth,
                             "pred_text_argmax": pred_text_argmax,
-                            # "pred_text_beam_search": pred_text_beam_search,
+                            "pred_text_beam_search": pred_text_beam_search,
                             "pred_text_lm_beam_search": pred_text_lm_beam_search,
                             "argmax_wer": argmax_wer,
                             "argmax_cer": argmax_cer,
@@ -119,8 +118,8 @@ def main(config, out_file):
             logger.info(table)
             
             
-    with Path(out_file).open("w") as f:
-        json.dump(results, f, indent=2)
+            with Path(f'{key}_{out_file}').open("w") as f:
+                json.dump(results, f, indent=2)
 
 
 if __name__ == "__main__":
