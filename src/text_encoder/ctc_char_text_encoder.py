@@ -28,9 +28,6 @@ class CTCCharTextEncoder(CharTextEncoder):
                 labels=[''] + [char.upper() for char in self.alphabet],
                 kenlm_model_path=lm_model_path
             )
-        self.lib_ctcdecoder = build_ctcdecoder(
-            labels=[''] + [char.upper() for char in self.alphabet]
-        )
         
         self.ind2char = dict(enumerate(vocab))
         self.char2ind = {v: k for k, v in self.ind2char.items()}
@@ -50,22 +47,14 @@ class CTCCharTextEncoder(CharTextEncoder):
         
         return ''.join(result)
     
-    def lib_ctc_beam_search_decode(self, probs: torch.tensor, probs_length,
-                                   beam_size: int = 4) -> str:
-        assert len(probs.shape) == 2
-        char_length, voc_size = probs.shape
-        assert voc_size == len(self.ind2char)
-        
-        return self.lib_ctcdecoder.decode(probs[:probs_length].detach().cpu().numpy(), beam_width=beam_size).lower().replace("'", '')
-    
     def ctc_beam_search_decode(self, probs: torch.tensor, probs_length,
-                               beam_size: int = 4) -> str:
+                               beam_size: int = 4, use_lm: bool = True) -> str:
         assert len(probs.shape) == 2
         char_length, voc_size = probs.shape
         assert voc_size == len(self.ind2char)
         
         if self.lm_ctcdecoder is None:
-            return self.lib_ctc_beam_search_decode(probs, probs_length, beam_size)
+            return self.ctc_beam_search(probs, probs_length, beam_size)[0].text
         
         return self.lm_ctcdecoder.decode(probs[:probs_length].detach().cpu().numpy(), beam_width=beam_size).lower().replace("'", '')
     
