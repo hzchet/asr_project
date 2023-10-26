@@ -246,7 +246,7 @@ class Trainer(BaseTrainer):
             wer = calc_wer(target, pred) * 100
             cer = calc_cer(target, pred) * 100
             
-            beamsearch_1 = self.text_encoder.ctc_beam_search_decode(torch.exp(probs), probs_length, beam_size=4)
+            beamsearch_1 = self.text_encoder.ctc_beam_search_decode(torch.exp(probs), probs_length, beam_size=2)
             beamsearch_wer = calc_wer(target, beamsearch_1) * 100
             beamsearch_cer = calc_cer(target, beamsearch_1) * 100
             
