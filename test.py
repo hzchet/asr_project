@@ -85,7 +85,7 @@ def main(config, out_file):
                         {
                             "ground_truth": ground_truth,
                             "pred_text_argmax": pred_text_argmax,
-                            "pred_text_beam_search": pred_text_beam_search,
+                            # "pred_text_beam_search": pred_text_beam_search,
                             "pred_text_lm_beam_search": pred_text_lm_beam_search,
                             "argmax_wer": argmax_wer,
                             "argmax_cer": argmax_cer,
