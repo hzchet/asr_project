@@ -1,5 +1,5 @@
 torch==2.1.0
-torchvision @ file:///opt/pytorch/vision
+torchvision==0.16.0+cu118
 numpy==1.22.2
 tqdm==4.64.1
 matplotlib==3.6.2
