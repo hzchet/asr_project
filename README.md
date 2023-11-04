@@ -20,7 +20,7 @@ cd asr_project
 - Install language models (used for beam-search rescoring) by running the following commands
 ```bash
 wget -P ./saved/lms/ https://www.openslr.org/resources/11/3-gram.arpa.gz
-wget -P ./saved/lms/ https://www.openslr.org/resources/11/3-gram.arpa.gz
+wget -P ./saved/lms/ https://www.openslr.org/resources/11/4-gram.arpa.gz
 gzip -d ./saved/lms/3-gram.arpa.gz
 gzip -d ./saved/lms/4-gram.arpa.gz
 ```
